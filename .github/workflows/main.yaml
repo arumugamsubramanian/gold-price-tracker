@@ -26,4 +26,4 @@ jobs:
         run: poetry install
 
       - name: Run script
-        run: python run gold-price-tracker
+        run: poetry run gold-price-tracker
