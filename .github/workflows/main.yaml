@@ -27,3 +27,11 @@ jobs:
 
       - name: Run script
         run: poetry run gold-price-tracker
+
+      - name: Commit Changes
+        run: |
+         git config --global user.name "Arumugam Subramanian"
+         git config --global user.email "arumugam1987@gmail.com"
+         git add .
+         git commit -m "Commit changes from script execution"
+         git push
