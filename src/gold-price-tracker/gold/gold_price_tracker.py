@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from datetime import date
 from tabulate import tabulate
+import re
+import csv
 
 
 def get_gold_price(driver):
@@ -31,6 +33,7 @@ def save_gold_price(filename, gold_price):
     today = date.today().strftime("%Y-%m-%d")
 
     gold_prices = gold_price.split("\n")
+    print(gold_prices)
 
     # Create a table with the gold price data
     gold_price_table = []
@@ -42,6 +45,43 @@ def save_gold_price(filename, gold_price):
         file.write(f"{today}:\n")
         file.write(tabulate(gold_price_table, headers=["Type", "Price"], tablefmt="fancy_grid"))
         file.write("\n\n")
+
+    # Append to the CSV file
+    with open('gold_prices.csv', 'a', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        for gold_info in gold_price_table:
+            csv_writer.writerow([today] + gold_info)
+
+
+def convert_txt_csv():
+    # Read the content of the file
+    with open('gold_prices.txt', 'r') as file:
+        content = file.read()
+
+    # Find all date sections in the content
+    date_sections = re.findall(r'(\d{4}-\d{2}-\d{2}):\n(.*?)\n\n', content, re.DOTALL)
+
+    # Create a list to store the extracted data
+    data = []
+
+    # Loop through each date section and extract the relevant information
+    for date, section in date_sections:
+        lines = section.strip().split('\n')
+        headers = [header.strip() for header in lines[1].split('│')[1:-1]]
+        for i in range(3, len(lines), 2):
+            parts = lines[i].split('│')[1:-1]
+            row = [date] + [part.strip() for part in parts]
+            data.append(row)
+
+    # Write the extracted data to a CSV file
+    with open('gold_prices.csv', 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Date'] + headers)
+
+        for row in data:
+            csv_writer.writerow(row)
+
+    print("CSV file 'gold_prices.csv' has been created.")
 
 
 def main() -> None:

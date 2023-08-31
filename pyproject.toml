@@ -19,3 +19,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 gold-price-tracker = "gold-price-tracker.gold.gold_price_tracker:main"
+convert-text = "gold-price-tracker.gold.gold_price_tracker:convert_txt_csv"
