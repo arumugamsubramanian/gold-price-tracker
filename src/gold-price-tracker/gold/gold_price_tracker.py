@@ -16,13 +16,6 @@ def get_gold_price(driver):
         # Load the webpage
         driver.get(url)
 
-        # Find the gold price element using its XPath
-        # gold_price_element = driver.find_element(By.XPATH,
-        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]")
-
-        # full_gold_price_element = driver.find_element(By.XPATH,
-        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]/ul")
-
         # Execute JavaScript to retrieve the data
         script = """
         var data = [];
@@ -124,7 +117,13 @@ def convert_txt_csv():
 def main() -> None:
     # Set up Selenium WebDriver with Chrome
     chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
+    chrome_options.add_argument()  # Run Chrome in headless mode
+    chrome_options.add_argument("--enable-logging")  # Enable logging
+    chrome_options.add_argument("--v=1")  # Set the verbosity level (1 for INFO, 2 for WARNING, 3 for ERROR)
+
+    # Enable network logs (optional)
+    chrome_options.add_argument("--log-net-log")  # Enable network logging
+    chrome_options.add_argument("--net-log-level=0")  # Set network logging level (0 for INFO, 1 for ERROR)
     driver = webdriver.Chrome(options=chrome_options)
     # Get the gold price
     daily_gold_price = get_gold_price(driver)
