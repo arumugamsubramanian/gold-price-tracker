@@ -1,6 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from datetime import date
 from tabulate import tabulate
 import re
@@ -8,18 +10,37 @@ import csv
 
 
 def get_gold_price(driver):
-    url = "https://www.lalithaaschemes.com/home"
+    url = "https://www.grtjewels.com/"
 
     try:
         # Load the webpage
         driver.get(url)
 
         # Find the gold price element using its XPath
-        gold_price_element = driver.find_element(By.XPATH,
-                                                 "/html/body/app-root/header/div[1]/div/div/div[2]/div/div[2]/form/select")
+        # gold_price_element = driver.find_element(By.XPATH,
+        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]")
+
+        # full_gold_price_element = driver.find_element(By.XPATH,
+        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]/ul")
+
+        # Execute JavaScript to retrieve the data
+        script = """
+        var data = [];
+        document.querySelectorAll('.state_rates li').forEach(function(item) {
+            data.push(item.textContent);
+        });
+        return data;
+        """
+        gold_price_element = driver.execute_script(script)
+
+        print(gold_price_element)
+
+        # Print the extracted data
+        # for item in data:
+        #     print(item)
 
         if gold_price_element:
-            gold_price = gold_price_element.text.strip()
+            gold_price = gold_price_element
             return gold_price
         else:
             return None
@@ -30,27 +51,43 @@ def get_gold_price(driver):
 
 
 def save_gold_price(filename, gold_price):
-    today = date.today().strftime("%Y-%m-%d")
+    current_date = date.today().strftime("%Y-%m-%d")
 
-    gold_prices = gold_price.split("\n")
-    print(gold_prices)
+    # gold_prices = gold_price.split("\n")
+    # print(gold_prices)
 
-    # Create a table with the gold price data
-    gold_price_table = []
-    for gold in gold_prices:
-        gold_info = gold.strip().split(" ₹ ")
-        gold_price_table.append(gold_info)
-
-    with open(filename, 'a') as file:
-        file.write(f"{today}:\n")
-        file.write(tabulate(gold_price_table, headers=["Type", "Price"], tablefmt="fancy_grid"))
-        file.write("\n\n")
+    # # Create a table with the gold price data
+    # gold_price_table = []
+    # for gold in gold_prices:
+    #     gold_info = gold.strip().split(" ₹ ")
+    #     gold_price_table.append(gold_info)
+    #
+    # with open(filename, 'a') as file:
+    #     file.write(f"{today}:\n")
+    #     file.write(tabulate(gold_price_table, headers=["Type", "Price"], tablefmt="fancy_grid"))
+    #     file.write("\n\n")
 
     # Append to the CSV file
     with open('gold_prices.csv', 'a', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-        for gold_info in gold_price_table:
-            csv_writer.writerow([today] + gold_info)
+        writer = csv.writer(csv_file)
+        for item in gold_price:
+            parts = item.split('-')
+            metal_name = parts[0].strip()
+            purity = parts[1].strip()
+
+            # Extract the weight and remove 'Rs' and extra spaces
+            weight_and_price = parts[-1].strip().replace('Rs', '')
+
+            # Check if the weight_and_price contains a space
+            if ' ' in weight_and_price:
+                weight, price = weight_and_price.split()
+                weight = f'1g {weight}'  # Add '1 g' to weight
+            else:
+                # If no space, treat the entire string as price, and set weight to '1 g'
+                weight = '1g'
+                price = weight_and_price
+
+            writer.writerow([current_date, f'{metal_name} - {purity} - {weight}', price])
 
 
 def convert_txt_csv():
@@ -96,7 +133,7 @@ def main() -> None:
     filename = 'gold_prices.txt'
     if daily_gold_price:
         save_gold_price(filename, daily_gold_price)
-        print("Daily Gold Price:", daily_gold_price)
+        # print("Daily Gold Price:", daily_gold_price)
     else:
         print("Failed to retrieve the gold price.")
 
