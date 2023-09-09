@@ -35,7 +35,9 @@ jobs:
           fi
 
       - name: Print PATH
-        run: echo $PATH
+        run: |
+          echo $PATH
+          which google-chrome
 
       - name: Install Poetry
         run: |
