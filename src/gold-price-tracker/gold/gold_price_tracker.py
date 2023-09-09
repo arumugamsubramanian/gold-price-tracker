@@ -1,144 +1,180 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from datetime import date
-from tabulate import tabulate
-import re
+import argparse
 import csv
+import re
+from datetime import date
+
+from playwright.sync_api import sync_playwright
 
 
-def get_gold_price(driver):
-    url = "https://www.grtjewels.com/"
+def test_google():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-    try:
-        # Load the webpage
-        driver.get(url)
+        # Navigate to Google
+        page.goto('https://www.google.com')
 
-        # Find the gold price element using its XPath
-        # gold_price_element = driver.find_element(By.XPATH,
-        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]")
+        # Get and print the HTML content of the page
+        # page_content = page.content()
+        # print(page_content)
 
-        # full_gold_price_element = driver.find_element(By.XPATH,
-        #                                          "/html/body/div[5]/header/div[2]/div/div[1]/div[3]/ul")
+        # Take a screenshot
+        # page.screenshot(path='screenshot.png')
 
-        # Execute JavaScript to retrieve the data
-        script = """
-        var data = [];
-        document.querySelectorAll('.state_rates li').forEach(function(item) {
-            data.push(item.textContent);
-        });
-        return data;
-        """
-        gold_price_element = driver.execute_script(script)
+        # Close the browser
+        browser.close()
 
-        print(gold_price_element)
 
-        # Print the extracted data
-        # for item in data:
-        #     print(item)
+def extract_metal_rates():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+        # page = browser.new_page()
 
-        if gold_price_element:
-            gold_price = gold_price_element
-            return gold_price
+        # Go to the website
+        page.goto("https://www.grtjewels.com/")
+
+        # Get and print the HTML content of the page
+        # page_content = page.content()
+        # print(page_content)
+
+        # Take a screenshot
+        # page.screenshot(path='screenshot.png')
+
+        # Wait for the element to load
+        page.wait_for_selector("#todaysrate .rate.slide-rates", timeout=30000)
+
+        # Click on the dropdown to make additional information visible
+        page.click("#todaysrate .rate.slide-rates")
+
+        # Wait for the dropdown to appear
+        page.wait_for_selector("#todaysrate .state_rates")
+
+        # Get the parent element containing all metal rates
+        parent_element = page.query_selector("#todaysrate .state_rates")
+
+        # Get the text content of all metal rates within the parent element
+        get_metal_rates_text = parent_element.text_content()
+
+        # Close the browser
+        browser.close()
+
+        return get_metal_rates_text
+
+
+def lalitha_extract_metal_rates():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+
+        # Navigate to the website
+        page.goto('https://www.lalithaajewellery.com/')
+
+        # Wait for the element to be present
+        page.wait_for_selector('.welcome-message a')
+
+        # Extract the rates from the marquee element
+        rates_text = page.inner_text('.welcome-message a')
+
+        # Close the browser
+        browser.close()
+
+        print(rates_text)
+
+        return rates_text
+
+
+def process_metal_rates(metal_text):
+    metal_rates_data = metal_text.strip()
+    # Use regular expression to split the text
+    metal_rates = re.findall(r'(.*?Rs\d+)', metal_rates_data)
+
+    metal_rates_list = []
+
+    for rate in metal_rates:
+        parts = rate.split('-')
+        metal_name = parts[0].strip()
+        purity = parts[1].strip()
+
+        # Extract the weight and remove 'Rs' and extra spaces
+        weight_and_price = parts[-1].strip().replace('Rs', '')
+
+        # Check if the weight_and_price contains a space
+        if ' ' in weight_and_price:
+            weight, price = weight_and_price.split()
+            weight = f'1 g {weight}'  # Add '1 g' to weight
         else:
-            return None
+            # If no space, treat the entire string as price, and set weight to '1 g'
+            weight = '1 g'
+            price = weight_and_price
 
-    except Exception as e:
-        print("Error occurred:", str(e))
-        return None
+        metal_rates_list.append([metal_name, purity, weight, price])
+
+    return metal_rates_list
 
 
-def save_gold_price(filename, gold_price):
+def save_gold_price(gold_price):
     current_date = date.today().strftime("%Y-%m-%d")
-
-    # gold_prices = gold_price.split("\n")
-    # print(gold_prices)
-
-    # # Create a table with the gold price data
-    # gold_price_table = []
-    # for gold in gold_prices:
-    #     gold_info = gold.strip().split(" ₹ ")
-    #     gold_price_table.append(gold_info)
-    #
-    # with open(filename, 'a') as file:
-    #     file.write(f"{today}:\n")
-    #     file.write(tabulate(gold_price_table, headers=["Type", "Price"], tablefmt="fancy_grid"))
-    #     file.write("\n\n")
 
     # Append to the CSV file
     with open('gold_prices.csv', 'a', newline='') as csv_file:
         writer = csv.writer(csv_file)
         for item in gold_price:
-            parts = item.split('-')
-            metal_name = parts[0].strip()
-            purity = parts[1].strip()
-
-            # Extract the weight and remove 'Rs' and extra spaces
-            weight_and_price = parts[-1].strip().replace('Rs', '')
-
-            # Check if the weight_and_price contains a space
-            if ' ' in weight_and_price:
-                weight, price = weight_and_price.split()
-                weight = f'1g {weight}'  # Add '1 g' to weight
-            else:
-                # If no space, treat the entire string as price, and set weight to '1 g'
-                weight = '1g'
-                price = weight_and_price
-
-            writer.writerow([current_date, f'{metal_name} - {purity} - {weight}', price])
+            print(item)
+            metal_name = item[0]
+            purity = item[1]
+            weight = item[2]
+            price = item[3]
+            writer.writerow([current_date, f'{metal_name}-{purity}-{weight}', price])
 
 
-def convert_txt_csv():
-    # Read the content of the file
-    with open('gold_prices.txt', 'r') as file:
-        content = file.read()
+def lalitha_format_rate_text(text):
+    # Define regex patterns for different metals
+    gold_pattern = re.compile(r'Gold (\d+k) - (\d)g = Rs\. (\d+)')
+    silver_pattern = re.compile(r'Silver (\d)g = Rs\. (\d+\.\d+)')
+    platinum_pattern = re.compile(r'Platinum (\d)g = Rs\. (\d+)')
 
-    # Find all date sections in the content
-    date_sections = re.findall(r'(\d{4}-\d{2}-\d{2}):\n(.*?)\n\n', content, re.DOTALL)
+    # Initialize an empty list to store the extracted information
+    result = []
 
-    # Create a list to store the extracted data
-    data = []
+    # Match and extract gold rates
+    gold_matches = gold_pattern.findall(text)
+    for match in gold_matches:
+        result.append(['GOLD', match[0], f"{match[1]} g", match[2]])
 
-    # Loop through each date section and extract the relevant information
-    for date, section in date_sections:
-        lines = section.strip().split('\n')
-        headers = [header.strip() for header in lines[1].split('│')[1:-1]]
-        for i in range(3, len(lines), 2):
-            parts = lines[i].split('│')[1:-1]
-            row = [date] + [part.strip() for part in parts]
-            data.append(row)
+    # Match and extract silver rates
+    silver_matches = silver_pattern.findall(text)
+    for match in silver_matches:
+        result.append(['SILVER', f"{match[0]} g", f"{match[0]} g", match[1]])
 
-    # Write the extracted data to a CSV file
-    with open('gold_prices.csv', 'w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date'] + headers)
+    # Match and extract platinum rates
+    platinum_matches = platinum_pattern.findall(text)
+    for match in platinum_matches:
+        result.append(['PLATINUM', f"{match[0]} g", f"{match[0]} g", match[1]])
 
-        for row in data:
-            csv_writer.writerow(row)
-
-    print("CSV file 'gold_prices.csv' has been created.")
+    return result
 
 
 def main() -> None:
-    # Set up Selenium WebDriver with Chrome
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
-    driver = webdriver.Chrome(options=chrome_options)
-    # Get the gold price
-    daily_gold_price = get_gold_price(driver)
+    # test_google()
+    parser = argparse.ArgumentParser(description='Extract rates from jewelry store websites.')
+    parser.add_argument('--store', choices=['lalitha', 'grt'], required=True, help='Specify the jewelry store')
 
-    # Save the gold price in a file
-    filename = 'gold_prices.txt'
-    if daily_gold_price:
-        save_gold_price(filename, daily_gold_price)
-        # print("Daily Gold Price:", daily_gold_price)
-    else:
-        print("Failed to retrieve the gold price.")
+    args = parser.parse_args()
+    store = args.store
 
-    # Quit the driver
-    driver.quit()
+    if store == 'lalitha':
+        lalitha_rates_text = lalitha_extract_metal_rates()
+        lalitha_rate_list = lalitha_format_rate_text(lalitha_rates_text)
+        print(lalitha_rate_list)
+        save_gold_price(lalitha_rate_list)
+    elif store == 'grt':
+        metal_rates_text = extract_metal_rates()
+        metal_rate_list = process_metal_rates(metal_rates_text)
+        print(metal_rate_list)
+        save_gold_price(metal_rate_list)
 
 
 if __name__ == "__main__":

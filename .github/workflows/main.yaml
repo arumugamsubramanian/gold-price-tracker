@@ -18,13 +18,6 @@ jobs:
         with:
           python-version: 3.8
 
-            # Install Chrome
-      - name: Install Google Chrome
-        run: |
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb
-          sudo apt-get -f install
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -32,13 +25,21 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Run script
-        run: poetry run gold-price-tracker
+      - name: Install Playwright
+        run: poetry run playwright install
 
-      - name: Commit Changes
+      - name: Run script
+        run: poetry run gold-price-tracker --store lalitha
+
+      - name: Configure Git user
         run: |
-         git config --global user.name "Arumugam Subramanian"
-         git config --global user.email "arumugam1987@gmail.com"
-         git add .
-         git commit -m "Commit changes from script execution"
-         git push
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Commit the datasets
+        run: |
+          git add .
+          git commit -m "update rates"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
