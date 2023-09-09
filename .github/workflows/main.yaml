@@ -34,6 +34,14 @@ jobs:
             exit 1  # Exit with an error code
           fi
 
+      - name: Add chromedriver to PATH
+        run: |          
+          # Add the directory to PATH
+          echo "export PATH=/usr/bin:$PATH" >> $HOME/.bashrc
+          
+          # Refresh the PATH
+          source $HOME/.bashrc
+
       - name: Print PATH
         run: |
           echo $PATH
