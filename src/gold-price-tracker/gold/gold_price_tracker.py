@@ -117,7 +117,7 @@ def convert_txt_csv():
 def main() -> None:
     # Set up Selenium WebDriver with Chrome
     chrome_options = Options()
-    chrome_options.add_argument()  # Run Chrome in headless mode
+    # chrome_options.add_argument("--headless")  # Run Chrome in headless mode
     chrome_options.add_argument("--enable-logging")  # Enable logging
     chrome_options.add_argument("--v=1")  # Set the verbosity level (1 for INFO, 2 for WARNING, 3 for ERROR)
 
